@@ -1,43 +1,43 @@
 package main
 
 func main() {
-	builder := newBuilder()
+	builder := NewBuilder()
 
 	// args var
-	builder.beginVariable("args", true)
+	builder.BeginVariable("args", true)
 
 	// parseArgs
-	builder.beginCall("parseArgs")
-	builder.addValue("3")
-	builder.addValue("\"\"")
+	builder.BeginCall("parseArgs")
+	builder.AddValue("3")
+	builder.AddValue("\"\"")
 
 	// action
-	builder.beginCall("carg")
-	builder.addValue("\"string\"")
-	builder.addValue("\"action\"")
-	builder.end()
+	builder.BeginCall("carg")
+	builder.AddValue("\"string\"")
+	builder.AddValue("\"action\"")
+	builder.End()
 
 	// user
-	builder.beginCall("carg")
-	builder.addValue("\"userid\"")
-	builder.addValue("\"user\"")
-	builder.end()
+	builder.BeginCall("carg")
+	builder.AddValue("\"userid\"")
+	builder.AddValue("\"user\"")
+	builder.End()
 
 	// key
-	builder.beginCall("carg")
-	builder.addValue("\"string\"")
-	builder.addValue("\"key\"")
-	builder.end()
+	builder.BeginCall("carg")
+	builder.AddValue("\"string\"")
+	builder.AddValue("\"key\"")
+	builder.End()
 
 	// data
-	builder.beginCall("carg")
-	builder.addValue("\"string\"")
-	builder.addValue("\"value\"")
-	builder.end()
+	builder.BeginCall("carg")
+	builder.AddValue("\"string\"")
+	builder.AddValue("\"value\"")
+	builder.End()
 
-	builder.end()
+	builder.End()
 
-	builder.end()
+	builder.End()
 
 	print(builder.Result)
 }

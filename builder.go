@@ -15,22 +15,22 @@ const (
 
 type BuilderContext struct {
 	FinalString string
-	Name        string
-	Value       string
-	Type        ContextType
-	Definition  bool
+	name        string
+	value       string
+	contextType ContextType
+	definition  bool
 	SubContexts []*BuilderContext
 }
 
-func (c *BuilderContext) collapse() {
-	switch c.Type {
+func (c *BuilderContext) Collapse() {
+	switch c.contextType {
 	case ValueContext:
-		c.FinalString = c.Value
+		c.FinalString = c.value
 	case CallContext:
-		args := []string{c.Name}
+		args := []string{c.name}
 
 		for _, subContext := range c.SubContexts {
-			if subContext.Type == ValueContext {
+			if subContext.contextType == ValueContext {
 				args = append(args, subContext.FinalString)
 			} else {
 				args = append(args, fmt.Sprintf("(%s)", subContext.FinalString))
@@ -42,8 +42,8 @@ func (c *BuilderContext) collapse() {
 		if len(c.SubContexts) != 1 {
 			panic("Invalid subcontexts count")
 		}
-		c.FinalString = fmt.Sprint("$", c.Name)
-		if c.Definition {
+		c.FinalString = fmt.Sprint("$", c.name)
+		if c.definition {
 			c.FinalString += " := "
 		} else {
 			c.FinalString += " = "
@@ -63,18 +63,18 @@ type Builder struct {
 	Result   string
 }
 
-func (b *Builder) baseBegin(context *BuilderContext) {
+func (b *Builder) BaseBegin(context *BuilderContext) {
 	b.Contexts = append(b.Contexts, context)
 }
 
-func (b *Builder) beginCall(call string) {
-	b.baseBegin(&BuilderContext{
-		Name: call,
-		Type: CallContext,
+func (b *Builder) BeginCall(call string) {
+	b.BaseBegin(&BuilderContext{
+		name:        call,
+		contextType: CallContext,
 	})
 }
 
-func (b *Builder) end() {
+func (b *Builder) End() {
 	if len(b.Contexts) == 0 {
 		return
 	}
@@ -82,7 +82,7 @@ func (b *Builder) end() {
 	context := b.Contexts[len(b.Contexts)-1]
 	b.Contexts = b.Contexts[0 : len(b.Contexts)-1]
 
-	context.collapse()
+	context.Collapse()
 	if len(b.Contexts) == 0 {
 		b.Result += fmt.Sprintf("{{%s}}", context.FinalString)
 	} else {
@@ -91,34 +91,26 @@ func (b *Builder) end() {
 	}
 }
 
-func (b *Builder) addValue(value string) {
-	b.baseBegin(&BuilderContext{
-		Value: value,
-		Type:  ValueContext,
+func (b *Builder) AddValue(value string) {
+	b.BaseBegin(&BuilderContext{
+		value:       value,
+		contextType: ValueContext,
 	})
-	b.end()
+	b.End()
 }
 
-func (b *Builder) getVariable(variable string) {
-	b.baseBegin(&BuilderContext{
-		Value: fmt.Sprint("$", variable),
-		Type:  ValueContext,
-	})
-	b.end()
-}
-
-func (b *Builder) beginVariable(variable string, definition bool) {
+func (b *Builder) BeginVariable(variable string, definition bool) {
 	if len(b.Contexts) > 0 {
 		panic("Invalid construction")
 	}
 
-	b.baseBegin(&BuilderContext{
-		Name:       variable,
-		Definition: definition,
-		Type:       VariableContext,
+	b.BaseBegin(&BuilderContext{
+		name:        variable,
+		definition:  definition,
+		contextType: VariableContext,
 	})
 }
 
-func newBuilder() *Builder {
+func NewBuilder() *Builder {
 	return &Builder{}
 }
