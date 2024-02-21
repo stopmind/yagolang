@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -22,7 +23,7 @@ type BuilderContext struct {
 	SubContexts []*BuilderContext
 }
 
-func (c *BuilderContext) Collapse() {
+func (c *BuilderContext) Collapse() error {
 	switch c.contextType {
 	case ValueContext:
 		c.FinalString = c.value
@@ -40,7 +41,7 @@ func (c *BuilderContext) Collapse() {
 		c.FinalString = strings.Join(args, " ")
 	case VariableContext:
 		if len(c.SubContexts) != 1 {
-			panic("Invalid subcontexts count")
+			return errors.New("invalid subcontexts count")
 		}
 		c.FinalString = fmt.Sprint("$", c.name)
 		if c.definition {
@@ -52,10 +53,11 @@ func (c *BuilderContext) Collapse() {
 		c.FinalString += c.SubContexts[0].FinalString
 
 	default:
-		panic("Unknown context type!")
+		return errors.New("unknown context type")
 	}
 
 	c.SubContexts = nil
+	return nil
 }
 
 type Builder struct {
@@ -74,21 +76,27 @@ func (b *Builder) BeginCall(call string) {
 	})
 }
 
-func (b *Builder) End() {
+func (b *Builder) End() error {
 	if len(b.Contexts) == 0 {
-		return
+		return nil
 	}
 
 	context := b.Contexts[len(b.Contexts)-1]
 	b.Contexts = b.Contexts[0 : len(b.Contexts)-1]
 
-	context.Collapse()
+	err := context.Collapse()
+	if err != nil {
+		return err
+	}
+
 	if len(b.Contexts) == 0 {
 		b.Result += fmt.Sprintf("{{%s}}", context.FinalString)
 	} else {
 		parent := b.Contexts[len(b.Contexts)-1]
 		parent.SubContexts = append(parent.SubContexts, context)
 	}
+
+	return nil
 }
 
 func (b *Builder) AddValue(value string) {
@@ -96,12 +104,12 @@ func (b *Builder) AddValue(value string) {
 		value:       value,
 		contextType: ValueContext,
 	})
-	b.End()
+	_ = b.End()
 }
 
-func (b *Builder) BeginVariable(variable string, definition bool) {
+func (b *Builder) BeginVariable(variable string, definition bool) error {
 	if len(b.Contexts) > 0 {
-		panic("Invalid construction")
+		return errors.New("invalid construction")
 	}
 
 	b.BaseBegin(&BuilderContext{
@@ -109,6 +117,8 @@ func (b *Builder) BeginVariable(variable string, definition bool) {
 		definition:  definition,
 		contextType: VariableContext,
 	})
+
+	return nil
 }
 
 func NewBuilder() *Builder {
