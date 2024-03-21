@@ -1,5 +1,11 @@
 package main
 
+import (
+	"errors"
+	"fmt"
+	"os"
+)
+
 type Translator struct {
 	projectPath string
 	files       []string
@@ -17,6 +23,54 @@ func (t *Translator) AddFile(filePath string) {
 }
 
 func (t *Translator) ProcessFile(filePath string) error {
+	data, err := os.ReadFile(filePath)
+
+	if err != nil {
+		return err
+	}
+
+	tokens := Tokenize(string(data))
+
+	fmt.Printf("File \"%v\" was reading.\n", filePath)
+	for i, token := range tokens {
+		fmt.Printf("Token (index: %v)\n"+
+			" Type: %v (index: %v)\n"+
+			" Line: %v\n"+
+			" Row: %v\n"+
+			" Data: %v\n\n",
+			i,
+			TokenTypeName(token.Type), token.Type,
+			token.Line,
+			token.Row,
+			token.Data)
+	}
+
+	for i := 0; i < len(tokens); i++ {
+		token := tokens[i]
+
+		switch token.Type {
+		case NameToken:
+			i++
+			if i >= len(tokens) {
+				return errors.New("Unexpected file end")
+			}
+			nextToken := tokens[i]
+
+			switch nextToken.Type {
+			case OpenBracketToken:
+				i++
+				if i >= len(tokens) || tokens[i].Type != CloseBracketToken {
+					return errors.New("this call not closed or use args")
+				}
+
+				t.entities = append(t.entities, CallEntity{funcName: token.Data})
+			default:
+				return errors.New("this construction not supported or incorrect")
+			}
+		}
+
+	}
+
 	return nil
 }
 
